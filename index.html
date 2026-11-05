@@ -130,6 +130,11 @@ canvas.drag { cursor: grabbing; }
 .close { position: absolute; top: 6px; right: 6px; width: 32px; min-height: 32px; padding: 0; border: 0; background: transparent; font-size: 20px; }
 
 .help { color: var(--muted); font-size: 13px; margin: 0; }
+.detail.hasphoto { flex-direction: row; align-items: flex-start; max-width: 540px; }
+.dbody { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.dphoto { flex: 0 0 120px; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); display: block; }
+.dphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 520px) { .detail.hasphoto { flex-direction: column; } .dphoto { width: 100%; height: 150px; flex: 0 0 auto; } }
 .help a { color: var(--accent); }
 .attr.road { color: #1d2b27; text-shadow: 0 0 3px rgba(255, 255, 255, 0.95); }
 .attr { position: absolute; right: 6px; bottom: 4px; max-width: 78%; text-align: right; font: 10px/1.25 var(--font-body); color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.95); pointer-events: none; }
@@ -195,11 +200,11 @@ canvas.drag { cursor: grabbing; }
 
   <details class="fmt" id="fmt" hidden>
     <summary>Format tabel Excel yang dibaca</summary>
-    <p style="margin:8px 0 0">Baris pertama berisi judul kolom. Kolom <code>nama</code>, <code>latitude</code>, dan <code>longitude</code> wajib ada. Kolom <code>sektor</code>, <code>jenis_usaha</code>, <code>kecamatan</code>, <code>alamat</code>, dan <code>telepon</code> boleh dikosongkan. Sektor yang kosong ditebak dari jenis usaha dan nama, dan kecamatan yang kosong diisi dari koordinatnya. Sektor yang dikenali: Kuliner, Perdagangan, Pertanian &amp; Perkebunan, Perikanan, Peternakan, Kerajinan &amp; Industri Rumahan, Jasa, Pariwisata &amp; Penginapan, dan Lainnya. Sektor lain yang Anda tulis menjadi kelompok baru.</p>
+    <p style="margin:8px 0 0">Baris pertama berisi judul kolom. Kolom <code>nama</code>, <code>latitude</code>, dan <code>longitude</code> wajib ada. Kolom <code>sektor</code>, <code>jenis_usaha</code>, <code>kecamatan</code>, <code>alamat</code>, <code>telepon</code>, dan <code>foto</code> boleh dikosongkan. Isi <code>foto</code> dengan alamat gambar (https://...) atau nama file di repositori, misalnya <code>foto/toko.jpg</code>. Sektor yang kosong ditebak dari jenis usaha dan nama, dan kecamatan yang kosong diisi dari koordinatnya. Sektor yang dikenali: Kuliner, Perdagangan, Pertanian &amp; Perkebunan, Perikanan, Peternakan, Kerajinan &amp; Industri Rumahan, Jasa, Pariwisata &amp; Penginapan, dan Lainnya. Sektor lain yang Anda tulis menjadi kelompok baru.</p>
     <div class="scroll">
       <table>
-        <thead><tr><th>nama</th><th>sektor</th><th>jenis_usaha</th><th>kecamatan</th><th>latitude</th><th>longitude</th><th>alamat</th><th>telepon</th></tr></thead>
-        <tbody><tr><td>Warung Kopi Bu Ani</td><td>Kuliner</td><td>Kedai kopi</td><td>Singkil</td><td>2.2830</td><td>97.7830</td><td>Jl. Contoh No. 1</td><td>08xxxxxxxxxx</td></tr></tbody>
+        <thead><tr><th>nama</th><th>sektor</th><th>jenis_usaha</th><th>kecamatan</th><th>latitude</th><th>longitude</th><th>alamat</th><th>telepon</th><th>foto</th></tr></thead>
+        <tbody><tr><td>Warung Kopi Bu Ani</td><td>Kuliner</td><td>Kedai kopi</td><td>Singkil</td><td>2.2830</td><td>97.7830</td><td>Jl. Contoh No. 1</td><td>08xxxxxxxxxx</td><td>foto/contoh.jpg</td></tr></tbody>
       </table>
     </div>
   </details>
@@ -306,7 +311,7 @@ canvas.drag { cursor: grabbing; }
   }
   function setPlaces(list, isSample, mode) {
     state.places = list.map(function (p, i) {
-      return { id: i, name: p.name, cat: p.cat || "Lainnya", jenis: p.jenis || "", tel: p.tel || "", kec: normKec(p.kec) || kecOf(p.lat, p.lng), lat: p.lat, lng: p.lng, addr: p.addr || "" };
+      return { id: i, name: p.name, cat: p.cat || "Lainnya", jenis: p.jenis || "", tel: p.tel || "", kec: normKec(p.kec) || kecOf(p.lat, p.lng), lat: p.lat, lng: p.lng, addr: p.addr || "", foto: p.foto || "" };
     });
     state.isSample = !!isSample;
     state.mode = mode || (isSample ? "example" : "file");
@@ -333,6 +338,7 @@ canvas.drag { cursor: grabbing; }
     tel: ["telepon", "telp", "hp", "nohp", "kontak", "whatsapp", "wa"],
     addr: ["alamat", "address", "keterangan"],
     kec: ["kecamatan", "kec", "distrik", "district"],
+    foto: ["foto", "gambar", "photo", "image", "fotourl", "linkfoto"],
     lat: ["latitude", "lat", "lintang"],
     lng: ["longitude", "lng", "lon", "long", "bujur"],
     both: ["koordinat", "coordinates", "coordinate", "latlng", "latlong"]
@@ -363,7 +369,7 @@ canvas.drag { cursor: grabbing; }
       var la = num(lat), ln = num(lng);
       if (!name || !isFinite(la) || !isFinite(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) { skipped++; return; }
       var jenis = pick(row, KEYS.jenis), jn = jenis ? String(jenis).trim() : "";
-      var cat = pick(row, KEYS.cat), addr = pick(row, KEYS.addr), kec = pick(row, KEYS.kec), tel = pick(row, KEYS.tel);
+      var cat = pick(row, KEYS.cat), addr = pick(row, KEYS.addr), kec = pick(row, KEYS.kec), foto = pick(row, KEYS.foto), tel = pick(row, KEYS.tel);
       var nm = String(name).trim();
       out.push({
         name: nm,
@@ -372,7 +378,7 @@ canvas.drag { cursor: grabbing; }
         tel: tel ? String(tel).trim() : "",
         kec: kec ? String(kec).trim().replace(/^kec(amatan|\.)?\s+/i, "") : "",
         lat: la, lng: ln,
-        addr: addr ? String(addr).trim() : ""
+        addr: addr ? String(addr).trim() : "", foto: foto ? String(foto).trim() : ""
       });
     });
     return { items: out, skipped: skipped };
@@ -488,6 +494,20 @@ canvas.drag { cursor: grabbing; }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
     else fallback();
   }
+  function photoOK(u) { return /^(https?:)?\/\//i.test(u) || !/^[a-z][a-z0-9+.-]*:/i.test(u); }
+  function addPhoto(box, p) {
+    if (!p.foto || !photoOK(p.foto)) return;
+    var kids = Array.prototype.slice.call(box.children);
+    var body = document.createElement("div"); body.className = "dbody";
+    kids.slice(1).forEach(function (k) { body.appendChild(k); });
+    var a = document.createElement("a"); a.className = "dphoto"; a.href = p.foto; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = "Buka foto";
+    var img = document.createElement("img"); img.alt = "Foto " + p.name; img.loading = "lazy";
+    img.onerror = function () { box.classList.remove("hasphoto"); if (a.parentNode) a.parentNode.removeChild(a); };
+    img.src = p.foto;
+    a.appendChild(img);
+    box.appendChild(a); box.appendChild(body);
+    box.classList.add("hasphoto");
+  }
   function renderDetail() {
     var box = el("detail"); box.textContent = "";
     var p = state.places[state.selected];
@@ -514,6 +534,7 @@ canvas.drag { cursor: grabbing; }
     g.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.lat + "," + p.lng);
     g.textContent = "Buka di Google Maps";
     row.appendChild(cp); row.appendChild(g); box.appendChild(row);
+    addPhoto(box, p);
   }
 
   /* ---------- tampilan ---------- */
@@ -846,8 +867,8 @@ canvas.drag { cursor: grabbing; }
     if (!dl || typeof XLSX === "undefined") return;
     var wb = XLSX.utils.book_new();
     var ws = XLSX.utils.aoa_to_sheet([
-      ["nama", "sektor", "jenis_usaha", "kecamatan", "latitude", "longitude", "alamat", "telepon"],
-      ["Contoh Warung Kopi (hapus baris ini)", "Kuliner", "Kedai kopi", "Singkil", 2.283, 97.783, "Jl. Contoh No. 1", "08xxxxxxxxxx"]
+      ["nama", "sektor", "jenis_usaha", "kecamatan", "latitude", "longitude", "alamat", "telepon", "foto"],
+      ["Contoh Warung Kopi (hapus baris ini)", "Kuliner", "Kedai kopi", "Singkil", 2.283, 97.783, "Jl. Contoh No. 1", "08xxxxxxxxxx", "foto/contoh.jpg"]
     ]);
     ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 20 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 30 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, ws, "Usaha");
