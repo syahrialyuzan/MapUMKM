@@ -815,7 +815,7 @@ canvas.drag { cursor: grabbing; }
   if (TILES_OK) {
     state.base = "road"; try { var sv = localStorage.getItem("peta-umkm-base"); if (sv === "sat" || sv === "road") state.base = sv; } catch (e) {}
     el("base").hidden = false; syncBase();
-    el("gridhelp").textContent = "Latar peta berupa grid garis lintang dan bujur. Tombol di pojok kanan atas peta berganti antara Map (peta topografi Esri dengan jalan, sungai, danau, dan landmark) dan Satelit. Untuk petunjuk arah, buka titik yang dipilih di Google Maps.";
+    el("gridhelp").textContent = "Tombol di pojok kanan atas peta berganti antara Map (peta topografi Esri dengan jalan, sungai, danau, dan landmark) dan Satelit. Untuk petunjuk arah, buka titik yang dipilih di Google Maps.";
     el("base").addEventListener("click", function () {
       state.base = state.base === "road" ? "sat" : "road";
       try { localStorage.setItem("peta-umkm-base", state.base); } catch (e) {}
